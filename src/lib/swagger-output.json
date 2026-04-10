@@ -1,0 +1,252 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Clinic Appointment API",
+    "version": "1.0.0",
+    "description": "REST API for managing clinic appointments. **X-Role** simulates RBAC for this challenge; it is not real authentication."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "CreateAppointmentBody": {
+        "type": "object",
+        "properties": {
+          "clinicianId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "patientId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["clinicianId", "patientId", "start", "end"],
+        "example": {
+          "clinicianId": "c1",
+          "patientId": "p1",
+          "start": "2030-06-15T10:00:00.000Z",
+          "end": "2030-06-15T11:00:00.000Z"
+        }
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/appointments": {
+      "post": {
+        "tags": ["Appointments"],
+        "summary": "Create appointment",
+        "description": "Minimum **X-Role**: patient. JSON body: ISO 8601 datetimes **with offset** (e.g. `2030-06-15T10:00:00.000Z` or `2030-06-15T12:00:00+02:00`); start must be in the future and strictly before end.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["patient", "clinician", "admin"],
+              "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list)."
+            },
+            "required": true,
+            "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list).",
+            "name": "X-Role",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "403": {
+            "description": "Missing/invalid X-Role or insufficient role"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Appointments"],
+        "summary": "Get all upcoming appointments (admin)",
+        "description": "Minimum **X-Role**: **admin**. Optional `from` / `to` use the same formats as clinician list: `YYYY-MM-DD` or ISO datetime with offset (e.g. `2028-01-03T00:00:00+01:00`). Defaults: limit 20, page 1.",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              ]
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              ]
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["patient", "clinician", "admin"],
+              "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list)."
+            },
+            "required": true,
+            "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list).",
+            "name": "X-Role",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request (e.g. from after to)"
+          },
+          "403": {
+            "description": "Missing/invalid X-Role or insufficient role"
+          }
+        }
+      }
+    },
+    "/clinicians/{id}/appointments": {
+      "get": {
+        "tags": ["Appointments"],
+        "summary": "Get clinician upcoming appointments",
+        "description": "Minimum **X-Role**: clinician. Optional query `from` / `to`: calendar date (`YYYY-MM-DD`, e.g. `2028-03-10`) or ISO 8601 datetime with offset (e.g. `2028-03-15T14:30:00-05:00`).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Clinician id"
+            },
+            "required": true,
+            "description": "Clinician id",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              ]
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              ]
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["patient", "clinician", "admin"],
+              "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list)."
+            },
+            "required": true,
+            "description": "Simulated role for this challenge (not production auth). Minimum role: **patient** (create), **clinician** (clinician list), or **admin** (admin list).",
+            "name": "X-Role",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request (e.g. from after to)"
+          },
+          "403": {
+            "description": "Missing/invalid X-Role or insufficient role"
+          }
+        }
+      }
+    }
+  }
+}

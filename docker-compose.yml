@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    container_name: clinic-appointment-api
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:./prisma/dev.db
+      - NODE_ENV=production
+    volumes:
+      - ./prisma:/app/prisma
